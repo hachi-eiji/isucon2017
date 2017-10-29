@@ -48,9 +48,15 @@ class App < Sinatra::Base
     db.query("DELETE FROM channel WHERE id > 10")
     db.query("DELETE FROM message WHERE id > 10000")
     db.query("DELETE FROM haveread")
+
     rows = db.query('SELECT * FROM channel ORDER BY id')
     rows.each do |row|
      redis.set "channel_#{row['id']}", row['description']
+    end
+
+    rows = db.query('select channel_id, COUNT(*) cnt from message group by channel_id')
+    rows.each do |row|
+     redis.set "channel_message_#{row['channel_id']}", row['cnt']
     end
     204
   end
@@ -221,9 +227,7 @@ class App < Sinatra::Base
     end
     @messages.reverse!
 
-    statement = db.prepare('SELECT COUNT(*) as cnt FROM message WHERE channel_id = ?')
-    cnt = statement.execute(@channel_id).first['cnt'].to_f
-    statement.close
+    cnt = (redis.get "channel_message_#{@channel_id}").to_f
     @max_page = cnt == 0 ? 1 :(cnt / n).ceil
 
     return 400 if @page > @max_page
@@ -377,6 +381,7 @@ class App < Sinatra::Base
     statement = db.prepare('INSERT INTO message (channel_id, user_id, content, created_at) VALUES (?, ?, ?, NOW())')
     messages = statement.execute(channel_id, user_id, content)
     statement.close
+    redis.incr "channel_message_#{channel_id}"
     messages
   end
 
