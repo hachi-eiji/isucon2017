@@ -92,8 +92,7 @@ class App < Sinatra::Base
 
   post '/login' do
     name = params[:name]
-    # FIXME name へのindex
-    statement = db.prepare('SELECT * FROM user WHERE name = ?')
+    statement = db.prepare('SELECT * FROM user WHERE name = ? limit 1')
     row = statement.execute(name).first
     statement.close
     if row.nil? || row['password'] != Digest::SHA1.hexdigest(row['salt'] + params[:password])
@@ -239,7 +238,7 @@ class App < Sinatra::Base
     @channels, = get_channel_list_info
 
     user_name = params[:user_name]
-    statement = db.prepare('SELECT * FROM user WHERE name = ?')
+    statement = db.prepare('SELECT * FROM user WHERE name = ? limit 1')
     @user = statement.execute(user_name).first
     statement.close
 
@@ -388,8 +387,9 @@ class App < Sinatra::Base
   end
 
   def get_channel_list_info(focus_channel_id = nil)
-    # FIXME: select * from channel where id = focus_channel_id で行けそう
     channels = db.query('SELECT * FROM channel ORDER BY id').to_a
+    return [channels, ''] if focus_channel_id.nil?
+
     description = ''
     channels.each do |channel|
       if channel['id'] == focus_channel_id
