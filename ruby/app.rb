@@ -2,6 +2,8 @@ require 'digest/sha1'
 require 'mysql2'
 require 'sinatra/base'
 require 'logger'
+require 'redis'
+require 'json'
 
 class App < Sinatra::Base
   configure do
@@ -46,6 +48,10 @@ class App < Sinatra::Base
     db.query("DELETE FROM channel WHERE id > 10")
     db.query("DELETE FROM message WHERE id > 10000")
     db.query("DELETE FROM haveread")
+    rows = db.query('SELECT * FROM channel ORDER BY id')
+    rows.each do |row|
+     redis.set "channel_#{row['id']}", row['description']
+    end
     204
   end
 
@@ -269,6 +275,7 @@ class App < Sinatra::Base
     statement.execute(name, description)
     channel_id = db.last_id
     statement.close
+    redis.set "channel_#{channel_id}", description
     redirect "/channel/#{channel_id}", 303
   end
 
@@ -354,6 +361,11 @@ class App < Sinatra::Base
     @db_client
   end
 
+  def redis
+    return @redis if defined? @redis
+    @redis = Redis.new(host: '127.0.0.1')
+  end
+
   def db_get_user(user_id)
     statement = db.prepare('SELECT * FROM user WHERE id = ?')
     user = statement.execute(user_id).first
@@ -386,13 +398,7 @@ class App < Sinatra::Base
     channels = db.query('SELECT * FROM channel ORDER BY id').to_a
     return [channels, ''] if focus_channel_id.nil?
 
-    description = ''
-    channels.each do |channel|
-      if channel['id'] == focus_channel_id
-        description = channel['description']
-        break
-      end
-    end
+    description = redis.get "channel_#{focus_channel_id}"
     [channels, description]
   end
 
