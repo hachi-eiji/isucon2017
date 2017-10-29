@@ -316,8 +316,8 @@ class App < Sinatra::Base
     end
 
     if !avatar_name.nil? && !avatar_data.nil?
-      path = File.expand_path('../../public', __FILE__) + "/icons"
-      File.open(avatar_name, 'w') do |f|
+      path = File.expand_path('../../public', __FILE__) + "/icons/" + avatar_name
+      File.open(path, 'w') do |f|
         f.print avatar_data
       end
       statement = db.prepare('UPDATE user SET avatar_icon = ? WHERE id = ?')
