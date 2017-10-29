@@ -162,27 +162,25 @@ class App < Sinatra::Base
 
     sleep 1.0
 
-    # FIXME: すべてのチャネルに対してデータを持ってきてるから最初からいらない
-    rows = db.query('SELECT id FROM channel').to_a
-    channel_ids = rows.map { |row| row['id'] }
-
     res = []
-    channel_ids.each do |channel_id|
-      statement = db.prepare('SELECT * FROM haveread WHERE user_id = ? AND channel_id = ?')
-      row = statement.execute(user_id, channel_id).first
-      statement.close
+    statement = db.prepare(<<-SQL
+               select c.id as id,
+               case when h.user_id is null then
+               (select count(*) as cnt from message m where m.channel_id = c.id)
+               else
+               (select count(*) as cnt from message m where m.channel_id = c.id and m.id > h.message_id)
+               end cnt
+               from channel c left join haveread h on c.id = h.channel_id where h.user_id = ?
+               SQL
+    )
+    rows = statement.execute(user_id)
+    rows.each do |row|
       r = {}
-      r['channel_id'] = channel_id
-      r['unread'] = if row.nil?
-        statement = db.prepare('SELECT COUNT(*) as cnt FROM message WHERE channel_id = ?')
-        statement.execute(channel_id).first['cnt']
-      else
-        statement = db.prepare('SELECT COUNT(*) as cnt FROM message WHERE channel_id = ? AND ? < id')
-        statement.execute(channel_id, row['message_id']).first['cnt']
-      end
-      statement.close
+      r['channel_id'] = row['id']
+      r['unread'] = row['cnt']
       res << r
     end
+    statement.close
 
     content_type :json
     res.to_json
