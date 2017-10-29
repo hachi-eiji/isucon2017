@@ -92,8 +92,10 @@ class App < Sinatra::Base
 
   post '/login' do
     name = params[:name]
+    # FIXME name へのindex
     statement = db.prepare('SELECT * FROM user WHERE name = ?')
     row = statement.execute(name).first
+    # FIXME: statement 閉じてない
     if row.nil? || row['password'] != Digest::SHA1.hexdigest(row['salt'] + params[:password])
       return 403
     end
@@ -131,6 +133,7 @@ class App < Sinatra::Base
     rows.each do |row|
       r = {}
       r['id'] = row['id']
+      # FIXME: N+1
       statement = db.prepare('SELECT name, display_name, avatar_icon FROM user WHERE id = ?')
       r['user'] = statement.execute(row['user_id']).first
       r['date'] = row['created_at'].strftime("%Y/%m/%d %H:%M:%S")
@@ -147,6 +150,7 @@ class App < Sinatra::Base
       'ON DUPLICATE KEY UPDATE message_id = ?, updated_at = NOW()',
     ].join)
     statement.execute(user_id, channel_id, max_message_id, max_message_id)
+    # FIXME: statement閉じてない
 
     content_type :json
     response.to_json
@@ -160,6 +164,7 @@ class App < Sinatra::Base
 
     sleep 1.0
 
+    # FIXME: すべてのチャネルに対してデータを持ってきてるから最初からいらない
     rows = db.query('SELECT id FROM channel').to_a
     channel_ids = rows.map { |row| row['id'] }
 
@@ -209,6 +214,7 @@ class App < Sinatra::Base
     rows.each do |row|
       r = {}
       r['id'] = row['id']
+      # FIXME: joinできると嬉しいかも
       statement = db.prepare('SELECT name, display_name, avatar_icon FROM user WHERE id = ?')
       r['user'] = statement.execute(row['user_id']).first
       r['date'] = row['created_at'].strftime("%Y/%m/%d %H:%M:%S")
@@ -329,6 +335,7 @@ class App < Sinatra::Base
 
   get '/icons/:file_name' do
     file_name = params[:file_name]
+    # FIXME: 画像はすべて静的ファイルにする
     statement = db.prepare('SELECT * FROM image WHERE name = ?')
     row = statement.execute(file_name).first
     statement.close
@@ -387,6 +394,7 @@ class App < Sinatra::Base
   end
 
   def get_channel_list_info(focus_channel_id = nil)
+    # FIXME: select * from channel where id = focus_channel_id で行けそう
     channels = db.query('SELECT * FROM channel ORDER BY id').to_a
     description = ''
     channels.each do |channel|
