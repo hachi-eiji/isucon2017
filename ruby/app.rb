@@ -4,13 +4,15 @@ require 'sinatra/base'
 require 'logger'
 
 class App < Sinatra::Base
-  Logger.class_eval { alias :write :'<<' }
-  logger = ::Logger.new(::File.new('log/app.log', 'a+'))
-
   configure do
+    enable :logging
     set :session_secret, 'tonymoris'
     set :public_folder, File.expand_path('../../public', __FILE__)
     set :avatar_max_size, 1 * 1024 * 1024
+    file = ::File.new('log/app.log', 'a+')
+    file.sync = true
+    logger = ::Logger.new(file)
+
     use Rack::CommonLogger, logger
 
     enable :sessions
