@@ -170,7 +170,7 @@ class App < Sinatra::Base
                else
                (select count(*) as cnt from message m where m.channel_id = c.id and m.id > h.message_id)
                end cnt
-               from channel c left join haveread h on c.id = h.channel_id where h.user_id = ?
+               from channel c left join haveread h on c.id = h.channel_id and h.user_id = ?
                SQL
     )
     rows = statement.execute(user_id)
