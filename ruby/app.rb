@@ -348,6 +348,18 @@ class App < Sinatra::Base
     404
   end
 
+  get '/debug/write' do
+    rows = db.query('select * from image').to_a
+    path = File.expand_path('../../public', __FILE__) + "/icons"
+    rows.each do |row|
+      file_name = path + '/' + row['name']
+      File.open(file_name, 'w') do |f|
+        f.print row['data']
+      end
+    end
+    200
+  end
+
   private
 
   def db
