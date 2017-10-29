@@ -200,20 +200,18 @@ class App < Sinatra::Base
     @page = @page.to_i
 
     n = 20
-    statement = db.prepare('SELECT * FROM message WHERE channel_id = ? ORDER BY id DESC LIMIT ? OFFSET ?')
+    statement = db.prepare('SELECT a.id id, a.created_at created_at, a.content content, b.name name, b.display_name display_name, b.avatar_icon avatar_icon FROM message a inner join user b on a.user_id = b.id WHERE a.channel_id = ? ORDER BY a.id DESC LIMIT ? OFFSET ?')
     rows = statement.execute(@channel_id, n, (@page - 1) * n).to_a
     statement.close
     @messages = []
     rows.each do |row|
       r = {}
       r['id'] = row['id']
-      # FIXME: joinできると嬉しいかも
-      statement = db.prepare('SELECT name, display_name, avatar_icon FROM user WHERE id = ?')
-      r['user'] = statement.execute(row['user_id']).first
+      r['user'] = {'name' => row['name'], 'display_name' => row['display_name'], 'avatar_icon' => row['avatar_icon']}
       r['date'] = row['created_at'].strftime("%Y/%m/%d %H:%M:%S")
       r['content'] = row['content']
       @messages << r
-      statement.close
+      #statement.close
     end
     @messages.reverse!
 
