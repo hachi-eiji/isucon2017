@@ -62,7 +62,7 @@ class App < Sinatra::Base
     end
 
     @channel_id = params[:channel_id].to_i
-    @channels, @description = get_channel_list_info(@channel_id)
+    @channels, @description = get_channel_info(@channel_id)
     erb :channel
   end
 
@@ -231,7 +231,7 @@ class App < Sinatra::Base
 
     return 400 if @page > @max_page
 
-    @channels, @description = get_channel_list_info(@channel_id)
+    @channels, @description = get_channel_info(@channel_id)
     erb :history
   end
 
@@ -393,8 +393,7 @@ class App < Sinatra::Base
     row['last_insert_id']
   end
 
-  def get_channel_list_info(focus_channel_id = nil)
-    # FIXME: select * from channel where id = focus_channel_id で行けそう
+  def get_channel_list_info(focus_channel_id)
     channels = db.query('SELECT * FROM channel ORDER BY id').to_a
     description = ''
     channels.each do |channel|
@@ -404,6 +403,13 @@ class App < Sinatra::Base
       end
     end
     [channels, description]
+  end
+
+  def get_channel_info(focus_channel_id)
+    statment = db.prepare('SELECT * FROM channels WHERE id =?')
+    row = statment.execute(focus_channel_id).first
+    statment.close
+    [row, row['description']]
   end
 
   def ext2mime(ext)
