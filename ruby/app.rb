@@ -95,7 +95,7 @@ class App < Sinatra::Base
     # FIXME name へのindex
     statement = db.prepare('SELECT * FROM user WHERE name = ?')
     row = statement.execute(name).first
-    # FIXME: statement 閉じてない
+    statement.close
     if row.nil? || row['password'] != Digest::SHA1.hexdigest(row['salt'] + params[:password])
       return 403
     end
