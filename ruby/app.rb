@@ -1,12 +1,17 @@
 require 'digest/sha1'
 require 'mysql2'
 require 'sinatra/base'
+require 'logger'
+
+Logger.class_eval { alias :write :'<<' }
+logger = ::Logger.new(::File.new('log/app.log', 'a+'))
 
 class App < Sinatra::Base
   configure do
     set :session_secret, 'tonymoris'
     set :public_folder, File.expand_path('../../public', __FILE__)
     set :avatar_max_size, 1 * 1024 * 1024
+    use Rack::CommonLogger, logger
 
     enable :sessions
   end
