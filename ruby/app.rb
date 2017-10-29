@@ -367,7 +367,8 @@ class App < Sinatra::Base
 
   def redis
     return @redis if defined? @redis
-    @redis = Redis.new(host: '127.0.0.1')
+    #@redis = Redis.new(host: '127.0.0.1')
+    @redis = Redis.new(path: '/var/run/redis/redis.sock')
   end
 
   def db_get_user(user_id)
