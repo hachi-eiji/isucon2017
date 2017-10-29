@@ -159,8 +159,6 @@ class App < Sinatra::Base
       return 403
     end
 
-    sleep 1.0
-
     res = []
     statement = db.prepare(<<-SQL
                select c.id as id,
