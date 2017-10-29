@@ -3,10 +3,10 @@ require 'mysql2'
 require 'sinatra/base'
 require 'logger'
 
-Logger.class_eval { alias :write :'<<' }
-logger = ::Logger.new(::File.new('log/app.log', 'a+'))
-
 class App < Sinatra::Base
+  Logger.class_eval { alias :write :'<<' }
+  logger = ::Logger.new(::File.new('log/app.log', 'a+'))
+
   configure do
     set :session_secret, 'tonymoris'
     set :public_folder, File.expand_path('../../public', __FILE__)
